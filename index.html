@@ -317,10 +317,32 @@
     </footer>
 
     <script>
-      document.getElementById('waitlist-form').addEventListener('submit', function (event) {
+      document.getElementById('waitlist-form').addEventListener('submit', async function (event) {
         event.preventDefault();
-        alert("Thanks! We'll be in touch.");
-        event.target.reset();
+        const form = event.target;
+        const email = form.querySelector('#email').value;
+        const btn = form.querySelector('button[type="submit"]');
+        const origText = btn.textContent;
+        btn.textContent = 'Sending...';
+        btn.disabled = true;
+        try {
+          const res = await fetch('https://formspree.io/f/xwpozzgr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          if (res.ok) {
+            btn.textContent = '✓ You're in!';
+            form.reset();
+            setTimeout(() => { btn.textContent = origText; btn.disabled = false; }, 3000);
+          } else {
+            btn.textContent = 'Try again';
+            btn.disabled = false;
+          }
+        } catch {
+          btn.textContent = 'Try again';
+          btn.disabled = false;
+        }
       });
     </script>
   </body>
