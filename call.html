@@ -65,6 +65,31 @@
         <p class="mt-4 text-sm text-gray-400">Necesitas micrófono. La llamada usa tu navegador — no necesitas un número de teléfono.</p>
       </div>
 
+      <!-- Mic permission state -->
+      <div id="mic-state" class="text-center max-w-lg hidden">
+        <div class="mx-auto mb-8 flex h-32 w-32 items-center justify-center rounded-full bg-amber-50">
+          <svg class="h-16 w-16 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold tracking-tight">Necesitamos acceso a tu micrófono</h2>
+        <p class="mt-4 text-lg text-gray-600">Para hablar con tu asistente, tu navegador necesita permiso para usar el micrófono. Es solo para la llamada — no grabamos nada.</p>
+        <button id="mic-btn" onclick="requestMic()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark active:scale-95">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg>
+          Activar micrófono y llamar
+        </button>
+        <div id="mic-error" class="mt-6 hidden rounded-2xl border border-red-100 bg-red-50 p-4">
+          <p class="text-sm text-red-700"><strong>No se pudo acceder al micrófono.</strong></p>
+          <p class="mt-1 text-sm text-red-600">Comprueba que tu navegador tiene permiso para usar el micrófono:</p>
+          <ul class="mt-2 text-sm text-red-600 text-left list-disc list-inside space-y-1">
+            <li>Haz clic en el icono de candado 🔒 en la barra de direcciones</li>
+            <li>Busca "Micrófono" y cámbialo a "Permitir"</li>
+            <li>Recarga la página e inténtalo de nuevo</li>
+          </ul>
+        </div>
+        <button onclick="resetUI()" class="mt-4 text-sm font-medium text-gray-500 hover:text-gray-700 transition">← Volver</button>
+      </div>
+
       <!-- Active call state -->
       <div id="call-state" class="text-center max-w-lg hidden">
         <div class="mx-auto mb-8 relative flex h-32 w-32 items-center justify-center">
@@ -118,19 +143,60 @@
     <script>
       const AGENT_ID = 'agent_aef66b618e36ad4f5b644c0119';
       let retellClient = null;
+      let micPermission = 'prompt'; // 'prompt' | 'granted' | 'denied'
 
       function showState(state) {
         document.getElementById('idle-state').classList.toggle('hidden', state !== 'idle');
+        document.getElementById('mic-state').classList.toggle('hidden', state !== 'mic');
         document.getElementById('call-state').classList.toggle('hidden', state !== 'call');
         document.getElementById('ended-state').classList.toggle('hidden', state !== 'ended');
       }
 
-      async function startCall() {
+      // Check mic permission on page load
+      async function checkMicPermission() {
         try {
-          document.getElementById('start-btn').disabled = true;
-          document.getElementById('start-btn').textContent = 'Conectando...';
+          const result = await navigator.permissions.query({ name: 'microphone' });
+          micPermission = result.state;
+          result.addEventListener('change', () => { micPermission = result.state; });
+        } catch {
+          // permissions API not supported, we'll request on click
+          micPermission = 'prompt';
+        }
+      }
+      checkMicPermission();
 
-          // Create web call via our simple proxy (or direct for demo)
+      async function requestMic() {
+        try {
+          document.getElementById('mic-btn').disabled = true;
+          document.getElementById('mic-btn').textContent = 'Activando micrófono...';
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // Stop tracks immediately — we just needed the permission
+          stream.getTracks().forEach(t => t.stop());
+          micPermission = 'granted';
+          // Permission granted, start the call directly
+          await doStartCall();
+        } catch (err) {
+          console.error('Mic permission denied:', err);
+          document.getElementById('mic-error').classList.remove('hidden');
+          document.getElementById('mic-btn').disabled = false;
+          document.getElementById('mic-btn').textContent = 'Intentar de nuevo';
+        }
+      }
+
+      async function startCall() {
+        if (micPermission === 'granted') {
+          await doStartCall();
+        } else {
+          // Show mic permission screen first
+          showState('mic');
+        }
+      }
+
+      async function doStartCall() {
+        try {
+          showState('call');
+          document.getElementById('call-status').textContent = 'Conectando...';
+
           const res = await fetch('https://api.retellai.com/v2/create-web-call', {
             method: 'POST',
             headers: {
@@ -148,7 +214,6 @@
           retellClient = new window.RetellClient();
 
           retellClient.on('call_started', () => {
-            showState('call');
             document.getElementById('call-status').textContent = 'Hablando...';
           });
 
@@ -173,7 +238,8 @@
           await retellClient.startCall({ accessToken: data.access_token });
         } catch (err) {
           console.error('Failed to start call:', err);
-          alert('No se pudo conectar la llamada. Asegúrate de dar permiso al micrófono.');
+          showState('idle');
+          alert('No se pudo conectar. Inténtalo de nuevo.');
           resetUI();
         }
       }
