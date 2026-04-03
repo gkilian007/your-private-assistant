@@ -40,7 +40,6 @@
     </style>
   </head>
   <body class="bg-white text-gray-900 font-sans antialiased">
-    <!-- Nav -->
     <nav class="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-lg">
       <div class="max-w-6xl mx-auto px-6 flex h-16 items-center justify-between">
         <a href="index.html" class="text-base font-semibold tracking-tight text-gray-900">Your Private Assistant</a>
@@ -49,8 +48,9 @@
     </nav>
 
     <main class="min-h-[80vh] flex flex-col items-center justify-center px-6 py-20">
-      <!-- Idle state -->
-      <div id="idle-state" class="text-center max-w-lg">
+
+      <!-- IDLE -->
+      <div id="state-idle" class="text-center max-w-lg">
         <div class="mx-auto mb-8 flex h-32 w-32 items-center justify-center rounded-full bg-brand-soft">
           <svg class="h-16 w-16 text-brand" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
@@ -58,63 +58,41 @@
         </div>
         <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Habla con tu asistente</h1>
         <p class="mt-4 text-lg text-gray-600">Pulsa el botón y empieza a hablar. Tu asistente te escucha y responde en tiempo real.</p>
-        <button id="start-btn" onclick="startCall()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark hover:shadow-xl active:scale-95">
-          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        <button id="start-btn" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark hover:shadow-xl active:scale-95">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg>
           Empezar llamada
         </button>
-        <p class="mt-4 text-sm text-gray-400">Necesitas micrófono. La llamada usa tu navegador — no necesitas un número de teléfono.</p>
-      </div>
+        <p class="mt-4 text-sm text-gray-400">Tu navegador pedirá permiso para el micrófono. La llamada es directa desde aquí — no necesitas un número de teléfono.</p>
 
-      <!-- Mic permission state -->
-      <div id="mic-state" class="text-center max-w-lg hidden">
-        <div class="mx-auto mb-8 flex h-32 w-32 items-center justify-center rounded-full bg-amber-50">
-          <svg class="h-16 w-16 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-          </svg>
-        </div>
-        <h2 class="text-2xl font-semibold tracking-tight">Necesitamos acceso a tu micrófono</h2>
-        <p class="mt-4 text-lg text-gray-600">Para hablar con tu asistente, tu navegador necesita permiso para usar el micrófono. Es solo para la llamada — no grabamos nada.</p>
-        <button id="mic-btn" onclick="requestMic()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark active:scale-95">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg>
-          Activar micrófono y llamar
-        </button>
-        <div id="mic-error" class="mt-6 hidden rounded-2xl border border-red-100 bg-red-50 p-4 text-left">
-          <p class="text-sm font-semibold text-red-700">No se pudo acceder al micrófono.</p>
-          <!-- iOS instructions -->
-          <div id="ios-instructions" class="hidden mt-3">
+        <!-- Mic error (shown inline under the button) -->
+        <div id="mic-error" class="mt-6 hidden rounded-2xl border border-red-100 bg-red-50 p-5 text-left max-w-md mx-auto">
+          <p class="text-sm font-semibold text-red-700">⚠️ No se pudo acceder al micrófono</p>
+          <div id="help-ios" class="hidden mt-3">
             <p class="text-sm text-red-600 font-medium">En iPhone / iPad:</p>
             <ol class="mt-2 text-sm text-red-600 list-decimal list-inside space-y-2">
-              <li>Abre <strong>Ajustes</strong> de tu iPhone</li>
-              <li>Baja hasta <strong>Safari</strong> (o el navegador que uses)</li>
-              <li>Toca <strong>Micrófono</strong> y ponlo en <strong>Permitir</strong></li>
-              <li>Vuelve aquí y recarga la página</li>
+              <li>Toca <strong>aA</strong> en la barra de direcciones de Safari</li>
+              <li>Toca <strong>Ajustes del sitio web</strong></li>
+              <li>Activa <strong>Micrófono</strong></li>
+              <li>Cierra este panel y pulsa <strong>Empezar llamada</strong> otra vez</li>
             </ol>
-            <p class="mt-3 text-sm text-red-600">También puedes:</p>
-            <ol class="mt-1 text-sm text-red-600 list-decimal list-inside space-y-1">
-              <li>Tocar <strong>aA</strong> en la barra de direcciones</li>
-              <li>Tocar <strong>Ajustes del sitio web</strong></li>
-              <li>Activar <strong>Micrófono</strong></li>
-            </ol>
+            <p class="mt-3 text-xs text-red-500">Si no aparece esa opción: ve a <strong>Ajustes → Safari → Micrófono → Permitir</strong></p>
           </div>
-          <!-- Desktop instructions -->
-          <div id="desktop-instructions" class="hidden mt-3">
-            <p class="text-sm text-red-600">Comprueba que tu navegador tiene permiso:</p>
-            <ul class="mt-2 text-sm text-red-600 list-disc list-inside space-y-1">
-              <li>Haz clic en el icono de candado 🔒 en la barra de direcciones</li>
-              <li>Busca "Micrófono" y cámbialo a "Permitir"</li>
-              <li>Recarga la página e inténtalo de nuevo</li>
-            </ul>
+          <div id="help-desktop" class="hidden mt-3">
+            <ol class="text-sm text-red-600 list-decimal list-inside space-y-1">
+              <li>Haz clic en el icono 🔒 de la barra de direcciones</li>
+              <li>Busca <strong>Micrófono</strong> y cámbialo a <strong>Permitir</strong></li>
+              <li>Recarga la página y pulsa <strong>Empezar llamada</strong></li>
+            </ol>
           </div>
         </div>
-        <button onclick="resetUI()" class="mt-4 text-sm font-medium text-gray-500 hover:text-gray-700 transition">← Volver</button>
       </div>
 
-      <!-- Active call state -->
-      <div id="call-state" class="text-center max-w-lg hidden">
+      <!-- CALLING -->
+      <div id="state-call" class="text-center max-w-lg hidden">
         <div class="mx-auto mb-8 relative flex h-32 w-32 items-center justify-center">
           <div class="absolute inset-0 rounded-full bg-brand/20 pulse-ring"></div>
           <div class="relative flex h-32 w-32 items-center justify-center rounded-full bg-brand">
-            <div id="sound-waves" class="flex items-center gap-1">
+            <div class="flex items-center gap-1">
               <div class="sound-bar w-1 rounded-full bg-white"></div>
               <div class="sound-bar w-1 rounded-full bg-white"></div>
               <div class="sound-bar w-1 rounded-full bg-white"></div>
@@ -125,14 +103,14 @@
         </div>
         <h2 class="text-2xl font-semibold tracking-tight">Tu asistente te escucha</h2>
         <p id="call-status" class="mt-2 text-gray-500">Conectando...</p>
-        <button id="end-btn" onclick="endCall()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-red-500 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-red-600 active:scale-95">
+        <button id="end-btn" class="mt-8 inline-flex items-center gap-2 rounded-full bg-red-500 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-red-600 active:scale-95">
           <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.956.956 0 01-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.27 11.27 0 00-2.67-1.85.996.996 0 01-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
           Colgar
         </button>
       </div>
 
-      <!-- Call ended state -->
-      <div id="ended-state" class="text-center max-w-lg hidden">
+      <!-- ENDED -->
+      <div id="state-ended" class="text-center max-w-lg hidden">
         <div class="mx-auto mb-8 flex h-32 w-32 items-center justify-center rounded-full bg-green-50">
           <svg class="h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -140,7 +118,7 @@
         </div>
         <h2 class="text-2xl font-semibold tracking-tight">Llamada finalizada</h2>
         <p class="mt-2 text-gray-500">Gracias por hablar con tu asistente.</p>
-        <button onclick="resetUI()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark active:scale-95">
+        <button id="again-btn" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark active:scale-95">
           Llamar de nuevo
         </button>
         <a href="index.html#plans" class="mt-4 block text-sm font-medium text-brand hover:text-brand-dark transition">Ver planes →</a>
@@ -160,131 +138,118 @@
 
     <script src="https://cdn.jsdelivr.net/npm/retell-client-js-sdk@3/bundle/index.js"></script>
     <script>
-      const AGENT_ID = 'agent_aef66b618e36ad4f5b644c0119';
-      let retellClient = null;
-      let micPermission = 'prompt'; // 'prompt' | 'granted' | 'denied'
+      (function () {
+        var AGENT_ID = 'agent_aef66b618e36ad4f5b644c0119';
+        var API_KEY = 'key_654a254892fce36a3c1995d41d89';
+        var retellClient = null;
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      function showState(state) {
-        document.getElementById('idle-state').classList.toggle('hidden', state !== 'idle');
-        document.getElementById('mic-state').classList.toggle('hidden', state !== 'mic');
-        document.getElementById('call-state').classList.toggle('hidden', state !== 'call');
-        document.getElementById('ended-state').classList.toggle('hidden', state !== 'ended');
-      }
-
-      // Check mic permission on page load
-      async function checkMicPermission() {
-        try {
-          const result = await navigator.permissions.query({ name: 'microphone' });
-          micPermission = result.state;
-          result.addEventListener('change', () => { micPermission = result.state; });
-        } catch {
-          // permissions API not supported, we'll request on click
-          micPermission = 'prompt';
+        var states = ['idle', 'call', 'ended'];
+        function show(name) {
+          states.forEach(function (s) {
+            document.getElementById('state-' + s).classList.toggle('hidden', s !== name);
+          });
         }
-      }
-      checkMicPermission();
 
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var startBtn = document.getElementById('start-btn');
+        var endBtn = document.getElementById('end-btn');
+        var againBtn = document.getElementById('again-btn');
 
-      async function requestMic() {
-        try {
-          document.getElementById('mic-btn').disabled = true;
-          document.getElementById('mic-btn').textContent = 'Activando micrófono...';
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          // Stop tracks immediately — we just needed the permission
-          stream.getTracks().forEach(t => t.stop());
-          micPermission = 'granted';
-          // Permission granted, start the call directly
-          await doStartCall();
-        } catch (err) {
-          console.error('Mic permission denied:', err);
-          document.getElementById('mic-error').classList.remove('hidden');
-          // Show platform-specific instructions
-          if (isIOS) {
-            document.getElementById('ios-instructions').classList.remove('hidden');
-            document.getElementById('desktop-instructions').classList.add('hidden');
-          } else {
-            document.getElementById('desktop-instructions').classList.remove('hidden');
-            document.getElementById('ios-instructions').classList.add('hidden');
+        startBtn.addEventListener('click', function () {
+          startBtn.disabled = true;
+          startBtn.textContent = 'Activando micrófono...';
+          // Hide any previous mic error
+          document.getElementById('mic-error').classList.add('hidden');
+
+          // Step 1: request mic permission (this triggers the browser prompt)
+          navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function (stream) {
+              // Got permission — stop the test stream
+              stream.getTracks().forEach(function (t) { t.stop(); });
+              // Step 2: now start the actual call
+              startBtn.textContent = 'Conectando...';
+              return startRetellCall();
+            })
+            .catch(function (err) {
+              console.error('Mic error:', err);
+              // Show the right instructions
+              var errBox = document.getElementById('mic-error');
+              errBox.classList.remove('hidden');
+              if (isIOS) {
+                document.getElementById('help-ios').classList.remove('hidden');
+                document.getElementById('help-desktop').classList.add('hidden');
+              } else {
+                document.getElementById('help-desktop').classList.remove('hidden');
+                document.getElementById('help-ios').classList.add('hidden');
+              }
+              startBtn.disabled = false;
+              startBtn.textContent = 'Intentar de nuevo';
+            });
+        });
+
+        endBtn.addEventListener('click', function () {
+          if (retellClient) {
+            try { retellClient.stopCall(); } catch (e) { /* ignore */ }
           }
-          document.getElementById('mic-btn').disabled = false;
-          document.getElementById('mic-btn').textContent = 'Intentar de nuevo';
-        }
-      }
+          show('ended');
+        });
 
-      async function startCall() {
-        if (micPermission === 'granted') {
-          await doStartCall();
-        } else {
-          // Show mic permission screen first
-          showState('mic');
-        }
-      }
+        againBtn.addEventListener('click', function () {
+          startBtn.disabled = false;
+          startBtn.innerHTML = '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg> Empezar llamada';
+          document.getElementById('mic-error').classList.add('hidden');
+          show('idle');
+        });
 
-      async function doStartCall() {
-        try {
-          showState('call');
+        function startRetellCall() {
+          show('call');
           document.getElementById('call-status').textContent = 'Conectando...';
 
-          const res = await fetch('https://api.retellai.com/v2/create-web-call', {
+          return fetch('https://api.retellai.com/v2/create-web-call', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer key_654a254892fce36a3c1995d41d89'
+              'Authorization': 'Bearer ' + API_KEY
             },
             body: JSON.stringify({ agent_id: AGENT_ID })
+          })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (!data.access_token) {
+              throw new Error('No access token');
+            }
+
+            retellClient = new window.RetellClient();
+
+            retellClient.on('call_started', function () {
+              document.getElementById('call-status').textContent = 'Hablando...';
+            });
+            retellClient.on('call_ended', function () {
+              retellClient = null;
+              show('ended');
+            });
+            retellClient.on('agent_start_talking', function () {
+              document.getElementById('call-status').textContent = 'Tu asistente está hablando...';
+            });
+            retellClient.on('agent_stop_talking', function () {
+              document.getElementById('call-status').textContent = 'Escuchando...';
+            });
+            retellClient.on('error', function (error) {
+              console.error('Retell error:', error);
+              show('ended');
+            });
+
+            return retellClient.startCall({ accessToken: data.access_token });
+          })
+          .catch(function (err) {
+            console.error('Call failed:', err);
+            show('idle');
+            startBtn.disabled = false;
+            startBtn.textContent = 'Intentar de nuevo';
+            alert('No se pudo conectar la llamada. Inténtalo de nuevo.');
           });
-          const data = await res.json();
-
-          if (!data.access_token) {
-            throw new Error('No access token received');
-          }
-
-          retellClient = new window.RetellClient();
-
-          retellClient.on('call_started', () => {
-            document.getElementById('call-status').textContent = 'Hablando...';
-          });
-
-          retellClient.on('call_ended', () => {
-            showState('ended');
-            retellClient = null;
-          });
-
-          retellClient.on('agent_start_talking', () => {
-            document.getElementById('call-status').textContent = 'Tu asistente está hablando...';
-          });
-
-          retellClient.on('agent_stop_talking', () => {
-            document.getElementById('call-status').textContent = 'Escuchando...';
-          });
-
-          retellClient.on('error', (error) => {
-            console.error('Retell error:', error);
-            showState('ended');
-          });
-
-          await retellClient.startCall({ accessToken: data.access_token });
-        } catch (err) {
-          console.error('Failed to start call:', err);
-          showState('idle');
-          alert('No se pudo conectar. Inténtalo de nuevo.');
-          resetUI();
         }
-      }
-
-      function endCall() {
-        if (retellClient) {
-          retellClient.stopCall();
-        }
-        showState('ended');
-      }
-
-      function resetUI() {
-        document.getElementById('start-btn').disabled = false;
-        document.getElementById('start-btn').innerHTML = '<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg> Empezar llamada';
-        showState('idle');
-      }
+      })();
     </script>
   </body>
 </html>
