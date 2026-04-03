@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SDK Test</title></head>
+<body style="font-family:system-ui;padding:2rem;">
+<h1>Retell SDK Test</h1>
+<div id="log" style="white-space:pre-wrap;font-family:monospace;font-size:14px;background:#f5f5f5;padding:1rem;border-radius:8px;"></div>
+<button id="test-call" style="margin-top:1rem;padding:12px 24px;font-size:16px;background:#4f46e5;color:white;border:none;border-radius:8px;" disabled>Test Call (loading SDK...)</button>
+
+<script type="module">
+  const log = document.getElementById('log');
+  const btn = document.getElementById('test-call');
+  
+  function addLog(msg) {
+    log.textContent += new Date().toISOString().slice(11,19) + ' ' + msg + '\n';
+    console.log(msg);
+  }
+
+  addLog('Step 1: Starting SDK import...');
+  
+  try {
+    const sdk = await import("https://esm.sh/retell-client-js-sdk@2.0.7?bundle-deps");
+    addLog('Step 2: SDK imported successfully');
+    addLog('Step 3: Exports: ' + Object.keys(sdk).join(', '));
+    addLog('Step 4: RetellWebClient type: ' + typeof sdk.RetellWebClient);
+    
+    if (typeof sdk.RetellWebClient === 'function') {
+      addLog('Step 5: Creating instance...');
+      const client = new sdk.RetellWebClient();
+      addLog('Step 6: Instance created: ' + typeof client);
+      addLog('Step 7: Has startCall: ' + typeof client.startCall);
+      addLog('Step 8: Has stopCall: ' + typeof client.stopCall);
+      addLog('Step 9: Has on: ' + typeof client.on);
+      addLog('');
+      addLog('✅ SDK LOADED AND WORKING');
+      
+      btn.disabled = false;
+      btn.textContent = 'Test Call';
+      
+      btn.addEventListener('click', async () => {
+        addLog('');
+        addLog('--- CALL TEST ---');
+        btn.disabled = true;
+        btn.textContent = 'Testing...';
+        
+        try {
+          addLog('Creating web call via API...');
+          const res = await fetch('https://api.retellai.com/v2/create-web-call', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer key_654a254892fce36a3c1995d41d89'
+            },
+            body: JSON.stringify({ agent_id: 'agent_aef66b618e36ad4f5b644c0119' })
+          });
+          
+          addLog('API response status: ' + res.status);
+          const data = await res.json();
+          addLog('Has access_token: ' + !!data.access_token);
+          addLog('Call ID: ' + (data.call_id || 'none'));
+          
+          if (!data.access_token) {
+            addLog('❌ No access_token!');
+            addLog('Response: ' + JSON.stringify(data));
+            return;
+          }
+          
+          addLog('Wiring events...');
+          const rwc = new sdk.RetellWebClient();
+          
+          rwc.on('call_started', () => addLog('🟢 EVENT: call_started'));
+          rwc.on('call_ended', () => addLog('🔴 EVENT: call_ended'));
+          rwc.on('agent_start_talking', () => addLog('🗣️ EVENT: agent_start_talking'));
+          rwc.on('agent_stop_talking', () => addLog('👂 EVENT: agent_stop_talking'));
+          rwc.on('error', (e) => addLog('❌ EVENT: error - ' + String(e)));
+          
+          addLog('Calling startCall (will request mic permission)...');
+          await rwc.startCall({ accessToken: data.access_token });
+          addLog('✅ startCall resolved — call is active!');
+          
+          btn.textContent = 'Hang up';
+          btn.disabled = false;
+          btn.onclick = () => {
+            rwc.stopCall();
+            addLog('stopCall() called');
+            btn.disabled = true;
+            btn.textContent = 'Done';
+          };
+          
+        } catch (err) {
+          addLog('❌ CALL ERROR: ' + err.name + ': ' + err.message);
+          addLog('Stack: ' + (err.stack || 'none'));
+          btn.disabled = false;
+          btn.textContent = 'Retry';
+        }
+      });
+      
+    } else {
+      addLog('❌ RetellWebClient is not a function!');
+    }
+    
+  } catch (err) {
+    addLog('❌ SDK IMPORT FAILED: ' + err.name + ': ' + err.message);
+    addLog('Stack: ' + (err.stack || 'none'));
+  }
+</script>
+</body>
+</html>
