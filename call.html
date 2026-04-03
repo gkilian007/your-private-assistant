@@ -62,28 +62,10 @@
           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg>
           Empezar llamada
         </button>
-        <p class="mt-4 text-sm text-gray-400">Tu navegador pedirá permiso para el micrófono. La llamada es directa desde aquí — no necesitas un número de teléfono.</p>
-
-        <!-- Mic error (shown inline under the button) -->
-        <div id="mic-error" class="mt-6 hidden rounded-2xl border border-red-100 bg-red-50 p-5 text-left max-w-md mx-auto">
-          <p class="text-sm font-semibold text-red-700">⚠️ No se pudo acceder al micrófono</p>
-          <div id="help-ios" class="hidden mt-3">
-            <p class="text-sm text-red-600 font-medium">En iPhone / iPad:</p>
-            <ol class="mt-2 text-sm text-red-600 list-decimal list-inside space-y-2">
-              <li>Toca <strong>aA</strong> en la barra de direcciones de Safari</li>
-              <li>Toca <strong>Ajustes del sitio web</strong></li>
-              <li>Activa <strong>Micrófono</strong></li>
-              <li>Cierra este panel y pulsa <strong>Empezar llamada</strong> otra vez</li>
-            </ol>
-            <p class="mt-3 text-xs text-red-500">Si no aparece esa opción: ve a <strong>Ajustes → Safari → Micrófono → Permitir</strong></p>
-          </div>
-          <div id="help-desktop" class="hidden mt-3">
-            <ol class="text-sm text-red-600 list-decimal list-inside space-y-1">
-              <li>Haz clic en el icono 🔒 de la barra de direcciones</li>
-              <li>Busca <strong>Micrófono</strong> y cámbialo a <strong>Permitir</strong></li>
-              <li>Recarga la página y pulsa <strong>Empezar llamada</strong></li>
-            </ol>
-          </div>
+        <p class="mt-4 text-sm text-gray-400">Tu navegador pedirá permiso para el micrófono. La llamada es directa — no necesitas un número de teléfono.</p>
+        <div id="call-error" class="mt-6 hidden rounded-2xl border border-red-100 bg-red-50 p-5 text-left max-w-md mx-auto">
+          <p id="error-msg" class="text-sm font-semibold text-red-700"></p>
+          <p id="error-detail" class="mt-2 text-sm text-red-600"></p>
         </div>
       </div>
 
@@ -136,13 +118,16 @@
       </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/retell-client-js-sdk@3/bundle/index.js"></script>
+    <!-- Retell Web SDK v2 — UMD bundle, exposes window.retellClientJsSdk -->
+    <script src="https://unpkg.com/retell-client-js-sdk@2.0.7/dist/index.umd.js"></script>
     <script>
       (function () {
         var AGENT_ID = 'agent_aef66b618e36ad4f5b644c0119';
         var API_KEY = 'key_654a254892fce36a3c1995d41d89';
-        var retellClient = null;
-        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        // Get RetellWebClient from UMD global
+        var RetellWebClient = window.retellClientJsSdk && window.retellClientJsSdk.RetellWebClient;
+        var retellWebClient = null;
 
         var states = ['idle', 'call', 'ended'];
         function show(name) {
@@ -151,61 +136,36 @@
           });
         }
 
+        function showError(title, detail) {
+          var box = document.getElementById('call-error');
+          document.getElementById('error-msg').textContent = title;
+          document.getElementById('error-detail').textContent = detail || '';
+          box.classList.remove('hidden');
+        }
+
+        function hideError() {
+          document.getElementById('call-error').classList.add('hidden');
+        }
+
         var startBtn = document.getElementById('start-btn');
         var endBtn = document.getElementById('end-btn');
         var againBtn = document.getElementById('again-btn');
 
+        // --- Start call ---
         startBtn.addEventListener('click', function () {
+          hideError();
           startBtn.disabled = true;
-          startBtn.textContent = 'Activando micrófono...';
-          // Hide any previous mic error
-          document.getElementById('mic-error').classList.add('hidden');
+          startBtn.textContent = 'Conectando...';
 
-          // Step 1: request mic permission (this triggers the browser prompt)
-          navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(function (stream) {
-              // Got permission — stop the test stream
-              stream.getTracks().forEach(function (t) { t.stop(); });
-              // Step 2: now start the actual call
-              startBtn.textContent = 'Conectando...';
-              return startRetellCall();
-            })
-            .catch(function (err) {
-              console.error('Mic error:', err);
-              // Show the right instructions
-              var errBox = document.getElementById('mic-error');
-              errBox.classList.remove('hidden');
-              if (isIOS) {
-                document.getElementById('help-ios').classList.remove('hidden');
-                document.getElementById('help-desktop').classList.add('hidden');
-              } else {
-                document.getElementById('help-desktop').classList.remove('hidden');
-                document.getElementById('help-ios').classList.add('hidden');
-              }
-              startBtn.disabled = false;
-              startBtn.textContent = 'Intentar de nuevo';
-            });
-        });
-
-        endBtn.addEventListener('click', function () {
-          if (retellClient) {
-            try { retellClient.stopCall(); } catch (e) { /* ignore */ }
+          if (!RetellWebClient) {
+            showError('Error: SDK no cargado', 'El SDK de Retell no se pudo cargar. Recarga la página.');
+            startBtn.disabled = false;
+            startBtn.textContent = 'Intentar de nuevo';
+            return;
           }
-          show('ended');
-        });
 
-        againBtn.addEventListener('click', function () {
-          startBtn.disabled = false;
-          startBtn.innerHTML = '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg> Empezar llamada';
-          document.getElementById('mic-error').classList.add('hidden');
-          show('idle');
-        });
-
-        function startRetellCall() {
-          show('call');
-          document.getElementById('call-status').textContent = 'Conectando...';
-
-          return fetch('https://api.retellai.com/v2/create-web-call', {
+          // Step 1: Create web call to get access token
+          fetch('https://api.retellai.com/v2/create-web-call', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -213,42 +173,93 @@
             },
             body: JSON.stringify({ agent_id: AGENT_ID })
           })
-          .then(function (res) { return res.json(); })
+          .then(function (res) {
+            if (!res.ok) throw new Error('API error: ' + res.status);
+            return res.json();
+          })
           .then(function (data) {
             if (!data.access_token) {
-              throw new Error('No access token');
+              throw new Error('No access_token in response');
             }
 
-            retellClient = new window.RetellClient();
+            // Step 2: Create client and start call
+            // The SDK handles mic permissions internally via startCall()
+            retellWebClient = new RetellWebClient();
 
-            retellClient.on('call_started', function () {
+            retellWebClient.on('call_started', function () {
+              console.log('call_started');
               document.getElementById('call-status').textContent = 'Hablando...';
             });
-            retellClient.on('call_ended', function () {
-              retellClient = null;
-              show('ended');
-            });
-            retellClient.on('agent_start_talking', function () {
-              document.getElementById('call-status').textContent = 'Tu asistente está hablando...';
-            });
-            retellClient.on('agent_stop_talking', function () {
-              document.getElementById('call-status').textContent = 'Escuchando...';
-            });
-            retellClient.on('error', function (error) {
-              console.error('Retell error:', error);
+
+            retellWebClient.on('call_ended', function () {
+              console.log('call_ended');
+              retellWebClient = null;
               show('ended');
             });
 
-            return retellClient.startCall({ accessToken: data.access_token });
+            retellWebClient.on('agent_start_talking', function () {
+              document.getElementById('call-status').textContent = 'Tu asistente está hablando...';
+            });
+
+            retellWebClient.on('agent_stop_talking', function () {
+              document.getElementById('call-status').textContent = 'Escuchando...';
+            });
+
+            retellWebClient.on('error', function (error) {
+              console.error('retell error:', error);
+              retellWebClient = null;
+              show('idle');
+              startBtn.disabled = false;
+              startBtn.textContent = 'Intentar de nuevo';
+              showError('Error en la llamada', String(error));
+            });
+
+            // Show call UI optimistically
+            show('call');
+            document.getElementById('call-status').textContent = 'Conectando micrófono...';
+
+            // startCall requests mic permission + connects WebRTC
+            return retellWebClient.startCall({
+              accessToken: data.access_token
+            });
+          })
+          .then(function () {
+            console.log('startCall resolved');
           })
           .catch(function (err) {
-            console.error('Call failed:', err);
+            console.error('call failed:', err);
             show('idle');
             startBtn.disabled = false;
             startBtn.textContent = 'Intentar de nuevo';
-            alert('No se pudo conectar la llamada. Inténtalo de nuevo.');
+
+            var msg = String(err);
+            if (msg.indexOf('Permission') !== -1 || msg.indexOf('NotAllowed') !== -1 || msg.indexOf('permission') !== -1) {
+              showError(
+                '⚠️ Necesitas dar permiso al micrófono',
+                'Tu navegador bloqueó el acceso al micrófono. Toca "aA" en la barra de direcciones → Ajustes del sitio web → Micrófono → Permitir. Luego pulsa "Intentar de nuevo".'
+              );
+            } else {
+              showError('No se pudo conectar', msg);
+            }
           });
-        }
+        });
+
+        // --- End call ---
+        endBtn.addEventListener('click', function () {
+          if (retellWebClient) {
+            try { retellWebClient.stopCall(); } catch (e) { /* ignore */ }
+          }
+          retellWebClient = null;
+          show('ended');
+        });
+
+        // --- Call again ---
+        againBtn.addEventListener('click', function () {
+          startBtn.disabled = false;
+          startBtn.innerHTML = '<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg> Empezar llamada';
+          hideError();
+          show('idle');
+        });
       })();
     </script>
   </body>
