@@ -78,14 +78,33 @@
           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" /></svg>
           Activar micrófono y llamar
         </button>
-        <div id="mic-error" class="mt-6 hidden rounded-2xl border border-red-100 bg-red-50 p-4">
-          <p class="text-sm text-red-700"><strong>No se pudo acceder al micrófono.</strong></p>
-          <p class="mt-1 text-sm text-red-600">Comprueba que tu navegador tiene permiso para usar el micrófono:</p>
-          <ul class="mt-2 text-sm text-red-600 text-left list-disc list-inside space-y-1">
-            <li>Haz clic en el icono de candado 🔒 en la barra de direcciones</li>
-            <li>Busca "Micrófono" y cámbialo a "Permitir"</li>
-            <li>Recarga la página e inténtalo de nuevo</li>
-          </ul>
+        <div id="mic-error" class="mt-6 hidden rounded-2xl border border-red-100 bg-red-50 p-4 text-left">
+          <p class="text-sm font-semibold text-red-700">No se pudo acceder al micrófono.</p>
+          <!-- iOS instructions -->
+          <div id="ios-instructions" class="hidden mt-3">
+            <p class="text-sm text-red-600 font-medium">En iPhone / iPad:</p>
+            <ol class="mt-2 text-sm text-red-600 list-decimal list-inside space-y-2">
+              <li>Abre <strong>Ajustes</strong> de tu iPhone</li>
+              <li>Baja hasta <strong>Safari</strong> (o el navegador que uses)</li>
+              <li>Toca <strong>Micrófono</strong> y ponlo en <strong>Permitir</strong></li>
+              <li>Vuelve aquí y recarga la página</li>
+            </ol>
+            <p class="mt-3 text-sm text-red-600">También puedes:</p>
+            <ol class="mt-1 text-sm text-red-600 list-decimal list-inside space-y-1">
+              <li>Tocar <strong>aA</strong> en la barra de direcciones</li>
+              <li>Tocar <strong>Ajustes del sitio web</strong></li>
+              <li>Activar <strong>Micrófono</strong></li>
+            </ol>
+          </div>
+          <!-- Desktop instructions -->
+          <div id="desktop-instructions" class="hidden mt-3">
+            <p class="text-sm text-red-600">Comprueba que tu navegador tiene permiso:</p>
+            <ul class="mt-2 text-sm text-red-600 list-disc list-inside space-y-1">
+              <li>Haz clic en el icono de candado 🔒 en la barra de direcciones</li>
+              <li>Busca "Micrófono" y cámbialo a "Permitir"</li>
+              <li>Recarga la página e inténtalo de nuevo</li>
+            </ul>
+          </div>
         </div>
         <button onclick="resetUI()" class="mt-4 text-sm font-medium text-gray-500 hover:text-gray-700 transition">← Volver</button>
       </div>
@@ -165,6 +184,8 @@
       }
       checkMicPermission();
 
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
       async function requestMic() {
         try {
           document.getElementById('mic-btn').disabled = true;
@@ -178,6 +199,14 @@
         } catch (err) {
           console.error('Mic permission denied:', err);
           document.getElementById('mic-error').classList.remove('hidden');
+          // Show platform-specific instructions
+          if (isIOS) {
+            document.getElementById('ios-instructions').classList.remove('hidden');
+            document.getElementById('desktop-instructions').classList.add('hidden');
+          } else {
+            document.getElementById('desktop-instructions').classList.remove('hidden');
+            document.getElementById('ios-instructions').classList.add('hidden');
+          }
           document.getElementById('mic-btn').disabled = false;
           document.getElementById('mic-btn').textContent = 'Intentar de nuevo';
         }
