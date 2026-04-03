@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Talk to Your Assistant — Your Private Assistant</title>
+    <meta name="description" content="Talk to your private assistant by voice, right from your browser." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            colors: {
+              brand: { DEFAULT: '#4f46e5', dark: '#4338ca', soft: '#eef2ff' },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      @keyframes pulse-ring {
+        0% { transform: scale(1); opacity: 0.8; }
+        50% { transform: scale(1.15); opacity: 0.4; }
+        100% { transform: scale(1); opacity: 0.8; }
+      }
+      .pulse-ring { animation: pulse-ring 2s ease-in-out infinite; }
+      @keyframes sound-wave {
+        0%, 100% { height: 8px; }
+        50% { height: 28px; }
+      }
+      .sound-bar { animation: sound-wave 0.8s ease-in-out infinite; }
+      .sound-bar:nth-child(2) { animation-delay: 0.1s; }
+      .sound-bar:nth-child(3) { animation-delay: 0.2s; }
+      .sound-bar:nth-child(4) { animation-delay: 0.3s; }
+      .sound-bar:nth-child(5) { animation-delay: 0.15s; }
+    </style>
+  </head>
+  <body class="bg-white text-gray-900 font-sans antialiased">
+    <!-- Nav -->
+    <nav class="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-lg">
+      <div class="max-w-6xl mx-auto px-6 flex h-16 items-center justify-between">
+        <a href="index.html" class="text-base font-semibold tracking-tight text-gray-900">Your Private Assistant</a>
+        <a href="index.html#plans" class="text-sm font-medium text-gray-600 transition hover:text-brand">See plans</a>
+      </div>
+    </nav>
+
+    <main class="min-h-[80vh] flex flex-col items-center justify-center px-6 py-20">
+      <!-- Idle state -->
+      <div id="idle-state" class="text-center max-w-lg">
+        <div class="mx-auto mb-8 flex h-32 w-32 items-center justify-center rounded-full bg-brand-soft">
+          <svg class="h-16 w-16 text-brand" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+          </svg>
+        </div>
+        <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Habla con tu asistente</h1>
+        <p class="mt-4 text-lg text-gray-600">Pulsa el botón y empieza a hablar. Tu asistente te escucha y responde en tiempo real.</p>
+        <button id="start-btn" onclick="startCall()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark hover:shadow-xl active:scale-95">
+          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+          Empezar llamada
+        </button>
+        <p class="mt-4 text-sm text-gray-400">Necesitas micrófono. La llamada usa tu navegador — no necesitas un número de teléfono.</p>
+      </div>
+
+      <!-- Active call state -->
+      <div id="call-state" class="text-center max-w-lg hidden">
+        <div class="mx-auto mb-8 relative flex h-32 w-32 items-center justify-center">
+          <div class="absolute inset-0 rounded-full bg-brand/20 pulse-ring"></div>
+          <div class="relative flex h-32 w-32 items-center justify-center rounded-full bg-brand">
+            <div id="sound-waves" class="flex items-center gap-1">
+              <div class="sound-bar w-1 rounded-full bg-white"></div>
+              <div class="sound-bar w-1 rounded-full bg-white"></div>
+              <div class="sound-bar w-1 rounded-full bg-white"></div>
+              <div class="sound-bar w-1 rounded-full bg-white"></div>
+              <div class="sound-bar w-1 rounded-full bg-white"></div>
+            </div>
+          </div>
+        </div>
+        <h2 class="text-2xl font-semibold tracking-tight">Tu asistente te escucha</h2>
+        <p id="call-status" class="mt-2 text-gray-500">Conectando...</p>
+        <button id="end-btn" onclick="endCall()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-red-500 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-red-600 active:scale-95">
+          <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.956.956 0 01-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.27 11.27 0 00-2.67-1.85.996.996 0 01-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
+          Colgar
+        </button>
+      </div>
+
+      <!-- Call ended state -->
+      <div id="ended-state" class="text-center max-w-lg hidden">
+        <div class="mx-auto mb-8 flex h-32 w-32 items-center justify-center rounded-full bg-green-50">
+          <svg class="h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold tracking-tight">Llamada finalizada</h2>
+        <p class="mt-2 text-gray-500">Gracias por hablar con tu asistente.</p>
+        <button onclick="resetUI()" class="mt-8 inline-flex items-center gap-2 rounded-full bg-brand px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-brand-dark active:scale-95">
+          Llamar de nuevo
+        </button>
+        <a href="index.html#plans" class="mt-4 block text-sm font-medium text-brand hover:text-brand-dark transition">Ver planes →</a>
+      </div>
+    </main>
+
+    <footer class="border-t border-gray-100 py-8">
+      <div class="max-w-6xl mx-auto px-6 flex flex-col gap-3 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+        <p>Your Private Assistant © 2026</p>
+        <div class="flex items-center gap-4">
+          <a href="#" class="transition hover:text-brand">Privacy</a>
+          <span>·</span>
+          <a href="#" class="transition hover:text-brand">Terms</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/retell-client-js-sdk@3/bundle/index.js"></script>
+    <script>
+      const AGENT_ID = 'agent_aef66b618e36ad4f5b644c0119';
+      let retellClient = null;
+
+      function showState(state) {
+        document.getElementById('idle-state').classList.toggle('hidden', state !== 'idle');
+        document.getElementById('call-state').classList.toggle('hidden', state !== 'call');
+        document.getElementById('ended-state').classList.toggle('hidden', state !== 'ended');
+      }
+
+      async function startCall() {
+        try {
+          document.getElementById('start-btn').disabled = true;
+          document.getElementById('start-btn').textContent = 'Conectando...';
+
+          // Create web call via our simple proxy (or direct for demo)
+          const res = await fetch('https://api.retellai.com/v2/create-web-call', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer key_654a254892fce36a3c1995d41d89'
+            },
+            body: JSON.stringify({ agent_id: AGENT_ID })
+          });
+          const data = await res.json();
+
+          if (!data.access_token) {
+            throw new Error('No access token received');
+          }
+
+          retellClient = new window.RetellClient();
+
+          retellClient.on('call_started', () => {
+            showState('call');
+            document.getElementById('call-status').textContent = 'Hablando...';
+          });
+
+          retellClient.on('call_ended', () => {
+            showState('ended');
+            retellClient = null;
+          });
+
+          retellClient.on('agent_start_talking', () => {
+            document.getElementById('call-status').textContent = 'Tu asistente está hablando...';
+          });
+
+          retellClient.on('agent_stop_talking', () => {
+            document.getElementById('call-status').textContent = 'Escuchando...';
+          });
+
+          retellClient.on('error', (error) => {
+            console.error('Retell error:', error);
+            showState('ended');
+          });
+
+          await retellClient.startCall({ accessToken: data.access_token });
+        } catch (err) {
+          console.error('Failed to start call:', err);
+          alert('No se pudo conectar la llamada. Asegúrate de dar permiso al micrófono.');
+          resetUI();
+        }
+      }
+
+      function endCall() {
+        if (retellClient) {
+          retellClient.stopCall();
+        }
+        showState('ended');
+      }
+
+      function resetUI() {
+        document.getElementById('start-btn').disabled = false;
+        document.getElementById('start-btn').innerHTML = '<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg> Empezar llamada';
+        showState('idle');
+      }
+    </script>
+  </body>
+</html>
